@@ -25,7 +25,7 @@ class BaseOptions():
         parser.add_argument('--gpu_ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
         parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
         # model parameters
-        parser.add_argument('--model', type=str, default='cycle_gan', help='chooses which model to use. [cycle_gan | pix2pix | test | colorization]')
+        parser.add_argument('--model', type=str, default='low_light_enhance', help='chooses which model to use. ')
         parser.add_argument('--input_nc', type=int, default=3, help='# of input image channels: 3 for RGB and 1 for grayscale')
         parser.add_argument('--output_nc', type=int, default=3, help='# of output image channels: 3 for RGB and 1 for grayscale')
         parser.add_argument('--ngf', type=int, default=64, help='# of gen filters in the last conv layer')
@@ -38,7 +38,7 @@ class BaseOptions():
         parser.add_argument('--init_gain', type=float, default=0.02, help='scaling factor for normal, xavier and orthogonal.')
         parser.add_argument('--no_dropout', action='store_true', help='no dropout for the generator')
         # dataset parameters
-        parser.add_argument('--dataset_mode', type=str, default='unaligned', help='chooses how datasets are loaded. [unaligned | aligned | single | colorization]')
+        parser.add_argument('--dataset_mode', type=str, default='paired', help='chooses how datasets are loaded. [unaligned | aligned | single | colorization]')
         parser.add_argument('--direction', type=str, default='AtoB', help='AtoB or BtoA')
         parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
         parser.add_argument('--num_threads', default=4, type=int, help='# threads for loading data')
@@ -54,9 +54,6 @@ class BaseOptions():
         parser.add_argument('--load_iter', type=int, default='0', help='which iteration to load? if load_iter > 0, the code will load models by iter_[load_iter]; otherwise, the code will load models by [epoch]')
         parser.add_argument('--verbose', action='store_true', help='if specified, print more debugging information')
         parser.add_argument('--suffix', default='', type=str, help='customized suffix: opt.name = opt.name + suffix: e.g., {model}_{netG}_size{load_size}')
-        # wandb parameters
-        parser.add_argument('--use_wandb', action='store_true', help='if specified, then init wandb logging')
-        parser.add_argument('--wandb_project_name', type=str, default='CycleGAN-and-pix2pix', help='specify wandb project name')
         self.initialized = True
         return parser
 

@@ -145,7 +145,7 @@ class BaseModel(ABC):
         """Save all the networks to the disk.
 
         Parameters:
-            epoch (int) -- current epoch; used in the file name '%s_net_%s.pth' % (epoch, name)
+            epoch (str) -- current epoch; used in the file name '%s_net_%s.pth' % (epoch, name)
         """
         for name in self.model_names:
             if isinstance(name, str):
@@ -154,7 +154,8 @@ class BaseModel(ABC):
                 net = getattr(self, 'net' + name)
 
                 if len(self.gpu_ids) > 0 and torch.cuda.is_available():
-                    torch.save(net.module.cpu().state_dict(), save_path)
+                    # torch.save(net.module.cpu().state_dict(), save_path)  <- 移除 .module
+                    torch.save(net.cpu().state_dict(), save_path)
                     net.cuda(self.gpu_ids[0])
                 else:
                     torch.save(net.cpu().state_dict(), save_path)
@@ -174,11 +175,6 @@ class BaseModel(ABC):
             self.__patch_instance_norm_state_dict(state_dict, getattr(module, key), keys, i + 1)
 
     def load_networks(self, epoch):
-        """Load all the networks from the disk.
-
-        Parameters:
-            epoch (int) -- current epoch; used in the file name '%s_net_%s.pth' % (epoch, name)
-        """
         for name in self.model_names:
             if isinstance(name, str):
                 load_filename = '%s_net_%s.pth' % (epoch, name)
@@ -187,16 +183,29 @@ class BaseModel(ABC):
                 if isinstance(net, torch.nn.DataParallel):
                     net = net.module
                 print('loading the model from %s' % load_path)
-                # if you are using PyTorch newer than 0.4 (e.g., built from
-                # GitHub source), you can remove str() on self.device
                 state_dict = torch.load(load_path, map_location=str(self.device))
+                
+                # Debug: Print keys in the state_dict
+                print("State dict keys:", state_dict.keys())
+
                 if hasattr(state_dict, '_metadata'):
                     del state_dict._metadata
 
-                # patch InstanceNorm checkpoints prior to 0.4
-                for key in list(state_dict.keys()):  # need to copy keys here because we mutate in loop
-                    self.__patch_instance_norm_state_dict(state_dict, net, key.split('.'))
-                net.load_state_dict(state_dict)
+                # Manually match keys if necessary
+                new_state_dict = {}
+                for key in state_dict.keys():
+                    new_key = key
+                    if key.startswith('module.'):
+                        new_key = key[7:]  # remove 'module.' prefix if present
+                    new_state_dict[new_key] = state_dict[key]
+
+                # Try to load the state_dict
+                try:
+                    net.load_state_dict(new_state_dict)
+                except RuntimeError as e:
+                    print(f"Error loading state_dict: {e}")
+                    # Handle the mismatch here, possibly by ignoring missing keys
+                    net.load_state_dict(new_state_dict, strict=False)
 
     def print_networks(self, verbose):
         """Print the total number of parameters in the network and (if verbose) network architecture
